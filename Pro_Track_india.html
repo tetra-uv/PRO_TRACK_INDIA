@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProTrack India — Sports Analytics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,153,51,.32); border-radius: 2px; }
+
+    body {
+      background: #09090e;
+      font-family: 'Inter', sans-serif;
+      color: #eeeef4;
+      overflow-x: hidden;
+      margin: 0;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 62px;
+      background: rgba(9,9,14,.72);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-bottom: 1px solid rgba(255,255,255,.057);
+    }
+    .navbar-inner {
+      max-width: 1300px; margin: 0 auto; padding: 0 24px;
+      height: 100%; display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo-mark {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, #ff9933 0%, #e67300 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-text { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 16.5px; }
+
+    /* ── NAV PILL ── */
+    .desktop-nav { position: relative; display: flex; align-items: center; gap: 2px; }
+    .nav-pill {
+      position: absolute; bottom: -1px; height: 2px;
+      background: linear-gradient(90deg, #ff9933, #ffb347);
+      border-radius: 2px 2px 0 0;
+      transition: left .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+    }
+    .nav-link {
+      padding: 8px 15px; font-size: 13.5px; font-weight: 500;
+      color: #50506a; border-radius: 8px; cursor: pointer;
+      transition: color .2s ease; user-select: none;
+    }
+    .nav-link:hover { color: #c4c4d8; }
+    .nav-link.active { color: #ff9933; }
+
+    /* ── MOBILE NAV ── */
+    #mobileNavBtn { display: none; }
+    @media (max-width: 768px) {
+      #mobileNavBtn { display: flex; }
+      .desktop-nav { display: none !important; }
+      .add-athlete-nav-btn { display: none !important; }
+    }
+
+    /* ── DRAWER ── */
+    .drawer-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.62); backdrop-filter: blur(5px);
+    }
+    .drawer-backdrop.open { display: block; }
+    .drawer-panel {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 268px; z-index: 201;
+      background: #10101a; border-right: 1px solid rgba(255,255,255,.07);
+      padding: 22px 18px;
+      transform: translateX(-100%);
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+    }
+    .drawer-backdrop.open .drawer-panel { transform: translateX(0); }
+    .drawer-link {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border-radius: 10px; font-size: 13.5px; font-weight: 500; cursor: pointer;
+      color: #50506a; transition: all .18s ease; margin-bottom: 2px;
+    }
+    .drawer-link:hover { background: rgba(255,255,255,.05); color: #d0d0e0; }
+    .drawer-link.active { background: rgba(255,153,51,.1); color: #ff9933; }
+
+    /* ── PAGE ── */
+    .page { animation: fadein .22s cubic-bezier(.4,0,.2,1); }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(9px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SURFACE LAYERS ── */
+    .card {
+      background: #10101a;
+      border: 1px solid rgba(255,255,255,.057);
+      border-radius: 16px;
+      transition: border-color .28s ease, box-shadow .28s ease, transform .28s cubic-bezier(.4,0,.2,1);
+    }
+    .card:hover {
+      border-color: rgba(255,153,51,.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,.44), 0 0 0 1px rgba(255,153,51,.08);
+      transform: translateY(-2px);
+    }
+    .card-nohover { background: #10101a; border: 1px solid rgba(255,255,255,.057); border-radius: 16px; }
+
+    /* ── KPI CARD ── */
+    .kpi-card {
+      background: linear-gradient(145deg, #10101a 0%, #16162a 100%);
+      border: 1px solid rgba(255,255,255,.057);
+      border-radius: 16px; overflow: hidden; position: relative;
+      transition: all .3s cubic-bezier(.4,0,.2,1);
+    }
+    .kpi-card::before {
+      content: ''; position: absolute; top: -28px; right: -28px;
+      width: 110px; height: 110px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,153,51,.07) 0%, transparent 70%);
+    }
+    .kpi-card:hover {
+      border-color: rgba(255,153,51,.22);
+      box-shadow: 0 10px 38px rgba(0,0,0,.5), 0 0 26px rgba(255,153,51,.04);
+      transform: translateY(-3px);
+    }
+
+    /* ── ATHLETE CARD ── */
+    .athlete-card {
+      background: #10101a; border: 1px solid rgba(255,255,255,.057);
+      border-radius: 16px; position: relative; overflow: hidden; cursor: pointer;
+      transition: all .3s cubic-bezier(.4,0,.2,1);
+    }
+    .athlete-card::after {
+      content: ''; position: absolute; inset: 0; border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,153,51,.045) 0%, transparent 100%);
+      opacity: 0; transition: opacity .28s ease;
+    }
+    .athlete-card:hover::after { opacity: 1; }
+    .athlete-card:hover {
+      border-color: rgba(255,153,51,.28);
+      box-shadow: 0 14px 44px rgba(0,0,0,.55), 0 0 0 1px rgba(255,153,51,.1);
+      transform: translateY(-4px);
+    }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      background: linear-gradient(135deg, #ff9933, #e67300);
+      color: #09090e; font-weight: 700; font-size: 13.5px;
+      border-radius: 10px; padding: 9px 18px; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: all .2s ease;
+    }
+    .btn-primary:hover { box-shadow: 0 0 24px rgba(255,153,51,.38); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); box-shadow: none; }
+
+    .btn-ghost {
+      background: rgba(255,255,255,.055); color: #9090a8; font-weight: 500; font-size: 13.5px;
+      border-radius: 10px; padding: 9px 18px; border: 1px solid rgba(255,255,255,.08);
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: all .18s ease;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,.09); color: #eeeef4; }
+
+    /* ── INPUT ── */
+    .input-field {
+      background: #181828; border: 1px solid rgba(255,255,255,.09);
+      border-radius: 10px; color: #eeeef4; padding: 10px 14px;
+      font-size: 13.5px; font-family: 'Inter', sans-serif; transition: all .2s ease;
+      outline: none; width: 100%;
+    }
+    .input-field:focus { border-color: rgba(255,153,51,.52); box-shadow: 0 0 0 3px rgba(255,153,51,.08); }
+    .input-field::placeholder { color: #323248; }
+    .input-field option { background: #181828; }
+    .input-error { border-color: rgba(239,68,68,.5) !important; box-shadow: 0 0 0 3px rgba(239,68,68,.07) !important; }
+
+    /* ── FILTER BUTTONS ── */
+    .filter-btn {
+      padding: 6px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+      cursor: pointer; border: 1px solid transparent; white-space: nowrap;
+      transition: all .18s ease;
+    }
+    .filter-btn.active { background: rgba(255,153,51,.13); color: #ff9933; border-color: rgba(255,153,51,.28); }
+    .filter-btn:not(.active) { color: #50506a; background: transparent; }
+    .filter-btn:not(.active):hover { color: #a0a0b8; background: rgba(255,255,255,.04); }
+
+    /* ── PROGRESS BAR ── */
+    .progress-track { height: 5px; background: rgba(255,255,255,.05); border-radius: 3px; overflow: hidden; }
+    .progress-fill  { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+    /* ── SKELETON ── */
+    .skeleton {
+      background: linear-gradient(90deg, #181828 25%, #1e1e30 50%, #181828 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite; border-radius: 14px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── TOAST ── */
+    #toastContainer {
+      position: fixed; top: 22px; right: 22px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    }
+    .toast {
+      padding: 12px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px; min-width: 255px;
+      pointer-events: auto; box-shadow: 0 8px 32px rgba(0,0,0,.55);
+      animation: toastIn .32s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(110%); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .toast.success { background: rgba(34,197,94,.11); border: 1px solid rgba(34,197,94,.27); color: #4ade80; }
+    .toast.error   { background: rgba(239,68,68,.11);  border: 1px solid rgba(239,68,68,.27);  color: #f87171; }
+    .toast.info    { background: rgba(255,153,51,.11); border: 1px solid rgba(255,153,51,.27); color: #ffb347; }
+
+    /* ── BADGES ── */
+    .rising-star {
+      background: rgba(255,153,51,.16); border: 1px solid rgba(255,153,51,.35);
+      color: #ff9933; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px; letter-spacing: .4px; white-space: nowrap;
+    }
+    .sport-badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; display: inline-block; }
+    .rank-1 { background: linear-gradient(135deg,#ffd700,#ffa000); color: #09090e; }
+    .rank-2 { background: linear-gradient(135deg,#c0c0c0,#909090); color: #09090e; }
+    .rank-3 { background: linear-gradient(135deg,#cd7f32,#a65e1a); color: #fff; }
+    .trend-up   { color: #22c55e; }
+    .trend-down { color: #ef4444; }
+    .trend-neutral { color: #60607a; }
+
+    /* ── LEADERBOARD ── */
+    .lb-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 13px; border-radius: 12px;
+      border: 1px solid transparent;
+      transition: background .18s ease; cursor: pointer;
+    }
+    .lb-row:hover { background: rgba(255,255,255,.04); }
+    .lb-row.t1 { background: rgba(255,215,0,.04);   border-color: rgba(255,215,0,.1);  margin-bottom: 3px; }
+    .lb-row.t2 { background: rgba(200,200,200,.04); border-color: rgba(200,200,200,.08); margin-bottom: 3px; }
+    .lb-row.t3 { background: rgba(205,127,50,.04);  border-color: rgba(205,127,50,.08); margin-bottom: 3px; }
+
+    /* ── AVATAR ── */
+    .avatar {
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; flex-shrink: 0;
+    }
+    .avatar-sq { border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+
+    /* ── FORM ERRORS ── */
+    .field-error { color: #ef4444; font-size: 12px; margin-top: 4px; display: none; }
+    .field-error.show { display: block; }
+
+    /* ── PODIUM ── */
+    .podium-card {
+      background: #10101a; border: 1px solid rgba(255,255,255,.057);
+      border-radius: 16px; display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end;
+      padding: 18px 14px; position: relative;
+      transition: all .28s ease;
+    }
+    .podium-card.gold   { border-color: rgba(255,215,0,.2);  background: linear-gradient(175deg,rgba(255,215,0,.05) 0%,#10101a 55%); }
+    .podium-card.silver { border-color: rgba(192,192,192,.15); }
+    .podium-card.bronze { border-color: rgba(205,127,50,.15); }
+
+    /* ── RESPONSIVE GRIDS ── */
+    .kpi-grid         { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+    .athletes-grid    { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+    .dash-charts      { display: grid; grid-template-columns: 3fr 2fr; gap: 18px; }
+    .analytics-top    { display: grid; grid-template-columns: 1fr 2fr; gap: 18px; }
+    .analytics-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+    .podium-grid      { display: grid; grid-template-columns: 1fr 1.12fr 1fr; gap: 14px; }
+    .form-row         { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 580px)  { .kpi-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
+    @media (max-width: 1050px) { .athletes-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 620px)  { .athletes-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 940px)  { .dash-charts { grid-template-columns: 1fr; } }
+    @media (max-width: 880px)  { .analytics-top { grid-template-columns: 1fr; } .analytics-bottom { grid-template-columns: 1fr; } }
+    @media (max-width: 560px)  { .podium-grid { grid-template-columns: 1fr; } }
+
+    input[type=range] { accent-color: #ff9933; }
+    .empty-icon { width: 58px; height: 58px; background: rgba(255,153,51,.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 24px; }
+  </style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<!-- ── MOBILE DRAWER ──────────────────────────────────────────────────────── -->
+<div class="drawer-backdrop" id="drawerBg" onclick="closeDrawer(event)">
+  <div class="drawer-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></div>
+        <span class="logo-text">ProTrack <span style="color:#ff9933;">India</span></span>
+      </div>
+      <button onclick="closeDrawer()" style="background:none;border:none;color:#50506a;cursor:pointer;font-size:18px;line-height:1;padding:0;">✕</button>
+    </div>
+    <nav>
+      <div class="drawer-link" id="dl-dashboard" onclick="nav('dashboard');closeDrawer()"><span>📊</span>Dashboard</div>
+      <div class="drawer-link" id="dl-athletes"  onclick="nav('athletes');closeDrawer()"><span>🏃</span>Athletes</div>
+      <div class="drawer-link" id="dl-leaderboard" onclick="nav('leaderboard');closeDrawer()"><span>🏆</span>Leaderboard</div>
+      <div class="drawer-link" id="dl-analytics"  onclick="nav('analytics');closeDrawer()"><span>📈</span>Analytics</div>
+      <div class="drawer-link" id="dl-add"         onclick="nav('add');closeDrawer()"><span>➕</span>Add Athlete</div>
+    </nav>
+  </div>
+</div>
+
+<!-- ── NAVBAR ────────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="mobileNavBtn" onclick="openDrawer()" style="background:none;border:none;color:#50506a;cursor:pointer;padding:0;align-items:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></div>
+      <span class="logo-text">ProTrack <span style="color:#ff9933;">India</span></span>
+      <span style="font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 7px;border-radius:6px;color:#40405a;border:1px solid rgba(255,255,255,.07);">BETA</span>
+    </div>
+
+    <div class="desktop-nav" id="desktopNav">
+      <div class="nav-pill" id="navPill"></div>
+      <a class="nav-link" id="nl-dashboard"   data-view="dashboard"   onclick="nav('dashboard')">Dashboard</a>
+      <a class="nav-link" id="nl-athletes"    data-view="athletes"    onclick="nav('athletes')">Athletes</a>
+      <a class="nav-link" id="nl-leaderboard" data-view="leaderboard" onclick="nav('leaderboard')">Leaderboard</a>
+      <a class="nav-link" id="nl-analytics"   data-view="analytics"   onclick="nav('analytics')">Analytics</a>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="loginBtn" class="btn-primary" onclick="openLogin()">
+      Login
+      </button>
+      <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#ff9933,#e67300);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#09090e;cursor:pointer;flex-shrink:0;">A</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── LOADING SKELETON ──────────────────────────────────────────────────── -->
+<div id="loadingSkeleton" style="padding-top:90px;max-width:1300px;margin:0 auto;padding-left:24px;padding-right:24px;">
+  <div class="kpi-grid" style="margin-bottom:20px;">
+    <div class="skeleton" style="height:116px;"></div>
+    <div class="skeleton" style="height:116px;"></div>
+    <div class="skeleton" style="height:116px;"></div>
+    <div class="skeleton" style="height:116px;"></div>
+  </div>
+  <div class="skeleton" style="height:290px;margin-bottom:18px;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+    <div class="skeleton" style="height:210px;"></div>
+    <div class="skeleton" style="height:210px;"></div>
+  </div>
+</div>
+
+<!-- ── MAIN CONTENT ──────────────────────────────────────────────────────── -->
+<main id="mainContent" style="padding-top:62px;max-width:1300px;margin:0 auto;padding-left:24px;padding-right:24px;padding-bottom:56px;"></main>
+
+<script>
+'use strict';
+
+// ── DATA ────────────────────────────────────────────────────────────────────
+var athletes = [
+  {id:1,  name:'Arjun Sharma',   sport:'Cricket',   score:94,age:22,state:'Maharashtra',     trend:+8,  history:[78,80,82,85,87,89,91,94],medals:3,active:true},
+  {id:2,  name:'Priya Nair',     sport:'Badminton', score:91,age:20,state:'Kerala',           trend:+12, history:[70,74,78,80,83,85,88,91],medals:2,active:true},
+  {id:3,  name:'Vikram Singh',   sport:'Wrestling', score:88,age:24,state:'Haryana',          trend:+5,  history:[80,81,83,82,84,85,87,88],medals:5,active:true},
+  {id:4,  name:'Anika Reddy',    sport:'Athletics', score:86,age:21,state:'Telangana',        trend:+9,  history:[72,75,76,79,80,82,84,86],medals:1,active:true},
+  {id:5,  name:'Rahul Gupta',    sport:'Football',  score:83,age:23,state:'West Bengal',      trend:-3,  history:[88,87,86,85,85,84,84,83],medals:0,active:true},
+  {id:6,  name:'Sneha Patel',    sport:'Boxing',    score:82,age:19,state:'Gujarat',          trend:+15, history:[60,64,68,72,74,76,79,82],medals:1,active:true},
+  {id:7,  name:'Dev Kumar',      sport:'Cricket',   score:79,age:25,state:'Punjab',           trend:+2,  history:[74,75,76,75,77,77,78,79],medals:2,active:true},
+  {id:8,  name:'Meera Joshi',    sport:'Athletics', score:77,age:22,state:'Rajasthan',        trend:+6,  history:[65,67,69,70,72,74,75,77],medals:0,active:true},
+  {id:9,  name:'Kiran Das',      sport:'Football',  score:75,age:20,state:'Odisha',           trend:-2,  history:[78,78,77,77,76,76,75,75],medals:0,active:true},
+  {id:10, name:'Ananya Iyer',    sport:'Badminton', score:73,age:18,state:'Tamil Nadu',       trend:+11, history:[55,58,62,65,67,69,71,73],medals:0,active:true},
+  {id:11, name:'Rohan Mehta',    sport:'Wrestling', score:70,age:26,state:'Uttar Pradesh',    trend:-5,  history:[76,75,74,73,73,72,71,70],medals:3,active:false},
+  {id:12, name:'Pooja Verma',    sport:'Boxing',    score:68,age:21,state:'Madhya Pradesh',   trend:+4,  history:[60,61,62,63,64,65,67,68],medals:0,active:true},
+];
+
+var SC = {
+  Cricket:   {bg:'rgba(59,130,246,.13)',  c:'#60a5fa', bd:'rgba(59,130,246,.27)'},
+  Badminton: {bg:'rgba(168,85,247,.13)',  c:'#c084fc', bd:'rgba(168,85,247,.27)'},
+  Wrestling: {bg:'rgba(239,68,68,.13)',   c:'#f87171', bd:'rgba(239,68,68,.27)'},
+  Athletics: {bg:'rgba(34,197,94,.13)',   c:'#4ade80', bd:'rgba(34,197,94,.27)'},
+  Football:  {bg:'rgba(14,165,233,.13)',  c:'#38bdf8', bd:'rgba(14,165,233,.27)'},
+  Boxing:    {bg:'rgba(234,179,8,.13)',   c:'#facc15', bd:'rgba(234,179,8,.27)'},
+};
+var AG = [
+  'linear-gradient(135deg,#ff9933,#e67300)',
+  'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+  'linear-gradient(135deg,#8b5cf6,#6d28d9)',
+  'linear-gradient(135deg,#22c55e,#16a34a)',
+  'linear-gradient(135deg,#ef4444,#b91c1c)',
+  'linear-gradient(135deg,#14b8a6,#0f766e)',
+  'linear-gradient(135deg,#f59e0b,#b45309)',
+  'linear-gradient(135deg,#ec4899,#be185d)',
+];
+var MONTHS = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'];
+
+var currentView  = 'dashboard';
+// ===== EDIT ATHLETE =====
+function editAthlete(id){
+  let a = athletes.find(x => x.id == id);
+  if(!a) return;
+
+  let name = prompt("Edit Name", a.name);
+  let sport = prompt("Edit Sport", a.sport);
+  let age = prompt("Edit Age", a.age);
+  let state = prompt("Edit State", a.state);
+
+  if(!name || !sport || !age || !state){
+    alert("Invalid input");
+    return;
+  }
+
+  a.name = name;
+  a.sport = sport;
+  a.age = parseInt(age);
+  a.state = state;
+
+  saveAthletes();
+  render(); // refresh UI
+}
+
+// ===== DELETE ATHLETE =====
+function deleteAthlete(id){
+  if(!confirm("Delete this athlete?")) return;
+
+  athletes = athletes.filter(a => a.id != id);
+
+  saveAthletes();
+  render();
+}
+var sportFilter  = 'All';
+var chartInst    = {};
+
+// ── UTILITIES ───────────────────────────────────────────────────────────────
+function initials(name){ return name.split(' ').map(function(w){return w[0];}).join('').slice(0,2); }
+function ag(id){ return AG[(id-1)%AG.length]; }
+function dark(id){ return id>4; }
+function isStar(a){ return a.trend>=10; }
+function sorted(){ return athletes.slice().sort(function(a,b){return b.score-a.score;}); }
+function sportCount(){
+  return athletes.reduce(function(m,a){m[a.sport]=(m[a.sport]||0)+1;return m;},{});
+}
+function trend(t){
+  if(t>0) return '<span class="trend-up" style="display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>+'+t+'%</span>';
+  if(t<0) return '<span class="trend-down" style="display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>'+t+'%</span>';
+  return '<span class="trend-neutral" style="font-size:11.5px;font-weight:600;">—</span>';
+}
+function badge(sport){
+  var c=SC[sport]||{bg:'rgba(255,255,255,.08)',c:'#aaa',bd:'rgba(255,255,255,.15)'};
+  return '<span class="sport-badge" style="background:'+c.bg+';color:'+c.c+';border:1px solid '+c.bd+'">'+sport+'</span>';
+}
+function progressColor(s){
+  if(s>=85) return 'linear-gradient(90deg,#ff9933,#ffb347)';
+  if(s>=70) return 'linear-gradient(90deg,#3b82f6,#60a5fa)';
+  return 'linear-gradient(90deg,#6b7280,#9ca3af)';
+}
+
+// ── TOAST ───────────────────────────────────────────────────────────────────
+function toast(msg,type){
+  type=type||'info';
+  var icons={success:'✓',error:'✕',info:'◆'};
+  var el=document.createElement('div');
+  el.className='toast '+type;
+  el.innerHTML='<span style="font-size:15px;">'+icons[type]+'</span><span>'+msg+'</span>';
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(function(){
+    el.style.transition='all .28s ease';
+    el.style.opacity='0';
+    el.style.transform='translateX(110%)';
+    setTimeout(function(){el.remove();},300);
+  },3000);
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────────
+function nav(view){
+  currentView=view;
+  // desktop pill
+  document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
+  var active=document.querySelector('.nav-link[data-view="'+view+'"]');
+  if(active){
+    active.classList.add('active');
+    var pill=document.getElementById('navPill');
+    var wrapper=document.getElementById('desktopNav');
+    if(pill&&wrapper){
+      var ar=active.getBoundingClientRect(), wr=wrapper.getBoundingClientRect();
+      pill.style.left=(ar.left-wr.left)+'px';
+      pill.style.width=ar.width+'px';
+      pill.style.bottom='-1px';
+    }
+  }
+  // drawer
+  document.querySelectorAll('.drawer-link').forEach(function(l){l.classList.remove('active');});
+  var dl=document.getElementById('dl-'+view);
+  if(dl) dl.classList.add('active');
+  // render
+  Object.values(chartInst).forEach(function(c){if(c&&c.destroy)c.destroy();});
+  chartInst={};
+  var main=document.getElementById('mainContent');
+  var html='';
+  if(view==='dashboard')   html=vDashboard();
+  else if(view==='athletes')    html=vAthletes();
+  else if(view==='leaderboard') html=vLeaderboard();
+  else if(view==='analytics')   html=vAnalytics();
+  else if(view==='add')         html=vAdd();
+  main.innerHTML='<div class="page" style="padding-top:30px;">'+html+'</div>';
+  setTimeout(function(){
+    if(view==='dashboard')   {initDash(); animateKPI();}
+    if(view==='leaderboard') initSparks();
+    if(view==='analytics')   initAnalytics();
+  },55);
+}
+
+// ── MOBILE DRAWER ───────────────────────────────────────────────────────────
+function openDrawer(){document.getElementById('drawerBg').classList.add('open');}
+function closeDrawer(e){
+  if(!e||e.target===document.getElementById('drawerBg'))
+    document.getElementById('drawerBg').classList.remove('open');
+}
+
+// ── COUNTER ANIMATION ───────────────────────────────────────────────────────
+function countUp(el,target,ms){
+  ms=ms||900;
+  var t0=performance.now();
+  (function tick(now){
+    var p=Math.min((now-t0)/ms,1), ease=1-Math.pow(1-p,3);
+    el.textContent=Math.round(target*ease);
+    if(p<1) requestAnimationFrame(tick);
+  })(performance.now());
+}
+
+// ── SPARKLINE ───────────────────────────────────────────────────────────────
+function sparkline(id,data,color){
+  var c=document.getElementById(id); if(!c) return;
+  var ctx=c.getContext('2d'),W=c.width,H=c.height;
+  var mn=Math.min.apply(null,data),mx=Math.max.apply(null,data),rng=mx-mn||1;
+  var pts=data.map(function(v,i){return{x:(i/(data.length-1))*W,y:H-((v-mn)/rng)*(H-4)-2};});
+  ctx.clearRect(0,0,W,H);
+  ctx.beginPath();
+  pts.forEach(function(p,i){i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);});
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();
+  ctx.fillStyle=color+'1f';ctx.fill();
+  ctx.beginPath();
+  pts.forEach(function(p,i){i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);});
+  ctx.strokeStyle=color;ctx.lineWidth=1.6;ctx.lineJoin='round';ctx.stroke();
+}
+
+// ── GAUGE ───────────────────────────────────────────────────────────────────
+function gauge(canvas,val,max){
+  var ctx=canvas.getContext('2d'),cx=canvas.width/2,cy=canvas.height/2+8;
+  var r=72,lw=13,sA=Math.PI*.75,eA=Math.PI*2.25,tA=eA-sA;
+  var pct=val/max,col=val>=85?['#ff9933','#ffb347']:val>=70?['#3b82f6','#60a5fa']:['#6b7280','#9ca3af'];
+  var t0=performance.now(),dur=1250;
+  (function frame(now){
+    var p=Math.min((now-t0)/dur,1),ease=1-Math.pow(1-p,3),ap=ease*pct;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.beginPath();ctx.arc(cx,cy,r,sA,eA);
+    ctx.strokeStyle='rgba(255,255,255,.056)';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+    if(ap>.002){
+      ctx.beginPath();ctx.arc(cx,cy,r,sA,sA+tA*ap);
+      var g=ctx.createLinearGradient(cx-r,cy,cx+r,cy);
+      g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);
+      ctx.strokeStyle=g;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+    }
+    if(p<1) requestAnimationFrame(frame);
+  })(performance.now());
+}
+
+// ── CHART DEFAULTS ──────────────────────────────────────────────────────────
+var CHART_TOOLTIP = {backgroundColor:'#1a1a28',borderColor:'rgba(255,255,255,.09)',borderWidth:1,padding:12,cornerRadius:10,titleColor:'#60607a',bodyColor:'#eeeef4'};
+var GRID_COLOR    = 'rgba(255,255,255,.038)';
+var TICK_COLOR    = '#303048';
+
+// ── VIEW: DASHBOARD ─────────────────────────────────────────────────────────
+function vDashboard(){
+  var s=sorted(),top=s[0];
+  var activeCount=athletes.filter(function(a){return a.active;}).length;
+  var avg=Math.round(athletes.reduce(function(sum,a){return sum+a.score;},0)/athletes.length);
+  return (
+    pageHeader('Dashboard','Welcome back — May 2026 season in progress',
+      '<div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;padding:7px 14px;border-radius:10px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:#4ade80;">'+
+      '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 7px #22c55e;"></span>Season Active</div>')+
+
+    '<div class="kpi-grid" style="margin-bottom:22px;">'+
+      kpi('🏃','kpi-total','Total Athletes','+2 new','rgba(255,153,51,.1)','rgba(34,197,94,.1)','#4ade80')+
+      kpi('⚡','kpi-active','Active Athletes','+5.2%','rgba(34,197,94,.1)','rgba(34,197,94,.1)','#4ade80')+
+      '<div class="kpi-card" style="padding:22px;">'+
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">'+
+          '<div style="width:38px;height:38px;border-radius:11px;background:rgba(255,153,51,.1);display:flex;align-items:center;justify-content:center;font-size:17px;">🏆</div>'+
+          trend(top.trend)+
+        '</div>'+
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:30px;color:#ff9933;margin-bottom:3px;">'+top.score+'</div>'+
+        '<div style="color:#50506a;font-size:13px;">Top Score — '+top.name.split(' ')[0]+'</div>'+
+      '</div>'+
+      '<div class="kpi-card" style="padding:22px;">'+
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">'+
+          '<div style="width:38px;height:38px;border-radius:11px;background:rgba(99,102,241,.1);display:flex;align-items:center;justify-content:center;font-size:17px;">📊</div>'+
+          '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;background:rgba(99,102,241,.1);color:#a78bfa;">+3.1 pts</span>'+
+        '</div>'+
+        '<div id="kpi-avg" style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:30px;color:#fff;margin-bottom:3px;">0</div>'+
+        '<div style="color:#50506a;font-size:13px;">Avg Performance Score</div>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="dash-charts" style="margin-bottom:22px;">'+
+      '<div class="card" style="padding:24px;">'+
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">'+
+          '<div>'+
+            '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;margin-bottom:2px;">Performance Timeline</div>'+
+            '<div style="color:#40405a;font-size:12px;">Monthly average score</div>'+
+          '</div>'+
+          '<div style="display:flex;gap:6px;" id="tlFilters">'+
+            '<button class="filter-btn active" onclick="tlFilter(this,8)">8M</button>'+
+            '<button class="filter-btn" onclick="tlFilter(this,6)">6M</button>'+
+            '<button class="filter-btn" onclick="tlFilter(this,3)">3M</button>'+
+          '</div>'+
+        '</div>'+
+        '<div style="position:relative;height:228px;"><canvas id="timelineChart"></canvas></div>'+
+      '</div>'+
+      '<div class="card" style="padding:24px;">'+
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;margin-bottom:2px;">Sport Distribution</div>'+
+        '<div style="color:#40405a;font-size:12px;margin-bottom:14px;">Athletes by discipline</div>'+
+        '<div style="position:relative;height:172px;display:flex;align-items:center;justify-content:center;"><canvas id="sportChart"></canvas></div>'+
+        '<div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;">'+
+          Object.entries(sportCount()).map(function(e){
+            var s=e[0],c=e[1];var col=SC[s];
+            return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;">'+
+              '<div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;border-radius:50%;background:'+col.c+';flex-shrink:0;"></div><span style="color:#7878a0;">'+s+'</span></div>'+
+              '<span style="font-weight:600;color:#eeeef4;">'+c+'</span></div>';
+          }).join('')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="card" style="padding:24px;">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">'+
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;">Top Performers</div>'+
+        '<button onclick="nav(\'athletes\')" style="background:none;border:none;color:#ff9933;font-size:13px;font-weight:600;cursor:pointer;">View all →</button>'+
+      '</div>'+
+      '<div style="overflow-x:auto;">'+
+        '<table style="width:100%;border-collapse:collapse;">'+
+          '<thead><tr style="border-bottom:1px solid rgba(255,255,255,.05);">'+
+            '<th style="text-align:left;padding-bottom:10px;font-size:11px;font-weight:600;color:#2e2e48;letter-spacing:.5px;white-space:nowrap;">RANK</th>'+
+            '<th style="text-align:left;padding-bottom:10px;font-size:11px;font-weight:600;color:#2e2e48;letter-spacing:.5px;">ATHLETE</th>'+
+            '<th style="text-align:left;padding-bottom:10px;font-size:11px;font-weight:600;color:#2e2e48;letter-spacing:.5px;">SPORT</th>'+
+            '<th style="text-align:left;padding-bottom:10px;font-size:11px;font-weight:600;color:#2e2e48;letter-spacing:.5px;">STATE</th>'+
+            '<th style="text-align:right;padding-bottom:10px;font-size:11px;font-weight:600;color:#2e2e48;letter-spacing:.5px;">SCORE</th>'+
+            '<th style="text-align:right;padding-bottom:10px;font-size:11px;font-weight:600;color:#2e2e48;letter-spacing:.5px;">TREND</th>'+
+          '</tr></thead>'+
+          '<tbody>'+
+            sorted().slice(0,6).map(function(a,i){
+              var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+              var rs=i>2?'background:rgba(255,255,255,.05);color:#40405a;':'';
+              return '<tr style="border-bottom:1px solid rgba(255,255,255,.028);">'+
+                '<td style="padding:10px 10px 10px 0;">'+
+                  '<div class="'+rc+'" style="width:27px;height:27px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'+rs+'">'+(i+1)+'</div>'+
+                '</td>'+
+                '<td style="padding:10px 0;">'+
+                  '<div style="display:flex;align-items:center;gap:10px;">'+
+                    '<div class="avatar" style="width:34px;height:34px;background:'+ag(a.id)+';font-size:11.5px;color:'+(dark(a.id)?'#fff':'#09090e')+';">'+initials(a.name)+'</div>'+
+                    '<div style="font-size:13.5px;font-weight:600;color:#eeeef4;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">'+a.name+(isStar(a)?'<span class="rising-star">⭐ RISING</span>':'')+'</div>'+
+                  '</div>'+
+                '</td>'+
+                '<td style="padding:10px 12px;">'+badge(a.sport)+'</td>'+
+                '<td style="padding:10px 0;font-size:13px;color:#5a5a7a;">'+a.state+'</td>'+
+                '<td style="padding:10px 0;text-align:right;font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;">'+a.score+'</td>'+
+                '<td style="padding:10px 0;text-align:right;">'+trend(a.trend)+'</td>'+
+              '</tr>';
+            }).join('')+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+function kpi(icon,id,label,badgeText,iconBg,badgeBg,badgeColor){
+  return '<div class="kpi-card" style="padding:22px;">'+
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">'+
+      '<div style="width:38px;height:38px;border-radius:11px;background:'+iconBg+';display:flex;align-items:center;justify-content:center;font-size:17px;">'+icon+'</div>'+
+      '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;background:'+badgeBg+';color:'+badgeColor+';">'+badgeText+'</span>'+
+    '</div>'+
+    '<div id="'+id+'" style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:30px;color:#fff;margin-bottom:3px;">0</div>'+
+    '<div style="color:#50506a;font-size:13px;">'+label+'</div>'+
+  '</div>';
+}
+
+function animateKPI(){
+  var t=document.getElementById('kpi-total');
+  var a=document.getElementById('kpi-active');
+  var v=document.getElementById('kpi-avg');
+  if(t) countUp(t,athletes.length,820);
+  if(a) countUp(a,athletes.filter(function(x){return x.active;}).length,920);
+  if(v) countUp(v,Math.round(athletes.reduce(function(s,x){return s+x.score;},0)/athletes.length),1050);
+}
+
+var TL_DATA=[74,76,78,80,81,83,85,87];
+function tlFilter(btn,n){
+  document.getElementById('tlFilters').querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  if(chartInst.timeline){
+    chartInst.timeline.data.labels=MONTHS.slice(8-n);
+    chartInst.timeline.data.datasets[0].data=TL_DATA.slice(8-n);
+    chartInst.timeline.update();
+  }
+}
+
+function initDash(){
+  var tEl=document.getElementById('timelineChart');
+  if(tEl){
+    var g=tEl.getContext('2d').createLinearGradient(0,0,0,228);
+    g.addColorStop(0,'rgba(255,153,51,.26)');g.addColorStop(1,'rgba(255,153,51,0)');
+    chartInst.timeline=new Chart(tEl,{
+      type:'line',
+      data:{labels:MONTHS,datasets:[{label:'Avg Score',data:TL_DATA,borderColor:'#ff9933',backgroundColor:g,fill:true,tension:.42,pointRadius:4,pointBackgroundColor:'#ff9933',pointBorderColor:'#09090e',pointBorderWidth:2,pointHoverRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:900,easing:'easeInOutQuart'},
+        plugins:{legend:{display:false},tooltip:CHART_TOOLTIP},
+        scales:{x:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:11}},border:{display:false}},y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:11}},border:{display:false},min:68,max:94}}}
+    });
+  }
+  var sEl=document.getElementById('sportChart');
+  if(sEl){
+    var counts=sportCount();
+    chartInst.sport=new Chart(sEl,{
+      type:'doughnut',
+      data:{labels:Object.keys(counts),datasets:[{data:Object.values(counts),backgroundColor:Object.keys(counts).map(function(s){return SC[s].c;}),borderColor:'#10101a',borderWidth:4,hoverBorderColor:'#10101a',hoverBorderWidth:4}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'74%',animation:{animateRotate:true,duration:1000},plugins:{legend:{display:false},tooltip:CHART_TOOLTIP}}
+    });
+  }
+}
+
+// ── VIEW: ATHLETES ──────────────────────────────────────────────────────────
+function vAthletes(){
+  var sports=['All'].concat(Object.keys(sportCount()));
+  var pool=sportFilter==='All'?athletes:athletes.filter(function(a){return a.sport===sportFilter;});
+  var s=pool.slice().sort(function(a,b){return b.score-a.score;});
+  var allS=sorted();
+
+  return pageHeader('Athletes',s.length+' athletes registered',
+    '<button onclick="nav(\'add\')" class="btn-primary"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Athlete</button>')+
+
+  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;align-items:center;">'+
+    '<div style="position:relative;flex:1;min-width:200px;">'+
+      '<svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#323248;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'+
+      '<input type="search" id="athleteSearch" class="input-field" style="padding-left:36px;" placeholder="Search by name, sport, state…" oninput="searchAthletes(this.value)">'+
+    '</div>'+
+    '<div style="display:flex;gap:5px;flex-wrap:wrap;">'+
+      sports.map(function(sp){return '<button class="filter-btn'+(sportFilter===sp?' active':'')+'" onclick="setSportFilter(\''+sp+'\')">'+sp+'</button>';}).join('')+
+    '</div>'+
+  '</div>'+
+
+  '<div class="athletes-grid" id="athletesGrid">'+
+    (s.length===0
+      ? '<div style="grid-column:1/-1;"><div class="card" style="padding:56px 32px;text-align:center;"><div class="empty-icon">🔍</div><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:17px;color:#eeeef4;margin-bottom:8px;">No athletes found</div><p style="color:#50506a;font-size:13.5px;margin:0 0 16px;">Try adjusting your filters</p><button onclick="clearFilters()" class="btn-ghost">Clear filters</button></div></div>'
+      : s.map(function(a){return athleteCard(a,allS.indexOf(a)+1);}).join('')
+    )+
+  '</div>';
+}
+
+function athleteCard(a,rank){
+  var top3=rank<=3;
+  var rc=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
+  return '<div class="athlete-card" style="padding:20px;'+(top3?'border-color:rgba(255,153,51,.15);':'')+'">'+
+    (top3?'<div style="position:absolute;top:14px;right:14px;z-index:1;"><div class="'+rc+'" style="width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">'+rank+'</div></div>':'')+
+    '<div style="display:flex;align-items:center;gap:13px;margin-bottom:15px;">'+
+      '<div class="avatar-sq" style="width:50px;height:50px;font-size:16px;background:'+ag(a.id)+';color:'+(dark(a.id)?'#fff':'#09090e')+';">'+initials(a.name)+'</div>'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px;">'+
+          '<span style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:14px;color:#eeeef4;">'+a.name+'</span>'+
+          (isStar(a)?'<span class="rising-star">⭐ RISING</span>':'')+
+        '</div>'+
+        badge(a.sport)+
+      '</div>'+
+    '</div>'+
+    '<div style="margin-bottom:13px;">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">'+
+        '<span style="font-size:12px;color:#40405a;">Performance Score</span>'+
+        '<div style="display:flex;align-items:center;gap:8px;">'+
+          '<span style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:18px;color:#eeeef4;">'+a.score+'</span>'+
+          trend(a.trend)+
+        '</div>'+
+      '</div>'+
+      '<div class="progress-track"><div class="progress-fill" style="width:'+a.score+'%;background:'+progressColor(a.score)+'"></div></div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;">'+
+      statBox(a.age,'Age')+statBox(a.medals,'Medals')+
+      '<div style="background:rgba(255,255,255,.028);border-radius:9px;padding:7px;text-align:center;">'+
+        '<div style="font-size:12px;font-weight:700;color:'+(a.active?'#22c55e':'#ef4444')+'">●</div>'+
+        '<div style="font-size:11px;color:#2e2e48;margin-top:1px;">'+(a.active?'Active':'Inactive')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,.042);">'+
+      '<span style="font-size:12px;color:#40405a;display:flex;align-items:center;gap:5px;">'+
+        '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+
+        a.state+
+      '</span>'+
+        '<div style="display:flex;gap:6px;">'+
+        '<button onclick="window.editAthlete('+a.id+')" style="font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(255,153,51,.1);color:#ff9933;border:1px solid rgba(255,153,51,.3);cursor:pointer;z-index:10;">Edit</button>'+
+
+'<button onclick="window.deleteAthlete('+a.id+')" style="font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);cursor:pointer;z-index:10;">Delete</button>'+
+     
+        '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function statBox(val,label){
+  return '<div style="background:rgba(255,255,255,.028);border-radius:9px;padding:7px;text-align:center;">'+
+    '<div style="font-size:13px;font-weight:700;color:#eeeef4;">'+val+'</div>'+
+    '<div style="font-size:11px;color:#2e2e48;margin-top:1px;">'+label+'</div>'+
+  '</div>';
+}
+
+function setSportFilter(s){sportFilter=s;nav('athletes');}
+function clearFilters(){sportFilter='All';nav('athletes');}
+
+function searchAthletes(q){
+  var allS=sorted();
+  var pool=sportFilter==='All'?allS:allS.filter(function(a){return a.sport===sportFilter;});
+  var lo=q.toLowerCase();
+  var res=q?pool.filter(function(a){return a.name.toLowerCase().indexOf(lo)>-1||a.sport.toLowerCase().indexOf(lo)>-1||a.state.toLowerCase().indexOf(lo)>-1;}):pool;
+  var grid=document.getElementById('athletesGrid');if(!grid)return;
+  grid.innerHTML=res.length===0
+    ?'<div style="grid-column:1/-1;"><div class="card" style="padding:56px 32px;text-align:center;"><div class="empty-icon">🔍</div><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:17px;color:#eeeef4;margin-bottom:8px;">No results for "'+q+'"</div><p style="color:#50506a;font-size:13.5px;margin:0;">Try a different name or sport</p></div></div>'
+    :res.map(function(a){return athleteCard(a,allS.indexOf(a)+1);}).join('');
+}
+
+// ── VIEW: LEADERBOARD ───────────────────────────────────────────────────────
+function vLeaderboard(){
+  var s=sorted();
+  var podium=[s[1],s[0],s[2]];
+  return pageHeader('Leaderboard','Ranked by performance score — May 2026',
+    '<div style="display:inline-flex;align-items:center;padding:7px 13px;border-radius:10px;background:rgba(255,153,51,.08);border:1px solid rgba(255,153,51,.2);color:#ff9933;font-size:12.5px;font-weight:600;">🏅 Season Rankings</div>')+
+
+  '<div class="podium-grid" style="margin-bottom:26px;">'+
+    podium.map(function(a,i){
+      var rank=i===1?1:i===0?2:3;
+      var cls=rank===1?'gold':rank===2?'silver':'bronze';
+      var rc=rank===1?'rank-1':rank===2?'rank-2':'rank-3';
+      var ht=rank===1?'148px':'118px';
+      var gc=rank===1?'#ffd700':rank===2?'#c0c0c0':'#cd7f32';
+      return '<div class="podium-card '+cls+'" style="min-height:'+ht+';">'+
+        (rank===1?'<div style="position:absolute;top:10px;font-size:22px;">👑</div>':'')+
+        '<div class="avatar-sq" style="width:46px;height:46px;font-size:15px;border-radius:13px;background:'+ag(a.id)+';color:'+(dark(a.id)?'#fff':'#09090e')+';">'+initials(a.name)+'</div>'+
+        '<div style="font-size:12.5px;font-weight:700;color:#eeeef4;margin-top:8px;text-align:center;">'+a.name.split(' ')[0]+'</div>'+
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:22px;color:'+gc+';margin-top:2px;">'+a.score+'</div>'+
+        '<div class="'+rc+'" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-top:8px;">'+rank+'</div>'+
+      '</div>';
+    }).join('')+
+  '</div>'+
+
+  '<div class="card-nohover" style="padding:24px;">'+
+    '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;margin-bottom:16px;">Full Rankings</div>'+
+    '<div>'+
+      s.map(function(a,i){
+        var rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+        var rs=i>2?'background:rgba(255,255,255,.05);color:#40405a;':'';
+        var cls=i===0?'t1':i===1?'t2':i===2?'t3':'';
+        return '<div class="lb-row '+cls+'">'+
+          '<div class="'+rc+'" style="width:29px;height:29px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;'+rs+'">'+(i+1)+'</div>'+
+          '<div class="avatar-sq" style="width:35px;height:35px;font-size:11.5px;border-radius:10px;background:'+ag(a.id)+';color:'+(dark(a.id)?'#fff':'#09090e')+';">'+initials(a.name)+'</div>'+
+          '<div style="flex:1;min-width:0;">'+
+            '<div style="font-size:13.5px;font-weight:600;color:#eeeef4;display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;">'+a.name+(isStar(a)?'<span class="rising-star">⭐ RISING</span>':'')+'</div>'+
+            '<div style="display:flex;align-items:center;gap:7px;">'+badge(a.sport)+'<span style="font-size:11.5px;color:#40405a;">'+a.state+'</span></div>'+
+          '</div>'+
+          '<canvas id="sp'+a.id+'" width="60" height="26" style="flex-shrink:0;display:block;"></canvas>'+
+          '<div style="text-align:right;flex-shrink:0;min-width:50px;">'+
+            '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:16px;color:#eeeef4;">'+a.score+'</div>'+
+            trend(a.trend)+
+          '</div>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+  '</div>';
+}
+
+function initSparks(){
+  sorted().forEach(function(a){ sparkline('sp'+a.id,a.history,(SC[a.sport]||{c:'#ff9933'}).c); });
+}
+
+// ── VIEW: ANALYTICS ─────────────────────────────────────────────────────────
+function vAnalytics(){
+  var s=sorted();
+  var avg=Math.round(athletes.reduce(function(sum,a){return sum+a.score;},0)/athletes.length);
+  var elites=s.filter(function(a){return a.score>=85;}).length;
+  var stars=athletes.filter(isStar).length;
+  return pageHeader('Analytics','Deep performance insights','')+
+
+  '<div class="analytics-top" style="margin-bottom:20px;">'+
+    '<div class="card" style="padding:24px;display:flex;flex-direction:column;align-items:center;">'+
+      '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;margin-bottom:18px;align-self:flex-start;">Overall Performance</div>'+
+      '<div style="position:relative;width:190px;height:190px;">'+
+        '<canvas id="gaugeCanvas" width="190" height="190"></canvas>'+
+        '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:14px;">'+
+          '<span style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:32px;color:#fff;line-height:1;">'+avg+'</span>'+
+          '<span style="font-size:12px;color:#40405a;margin-top:3px;">avg score</span>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;margin-top:18px;">'+
+        '<div style="text-align:center;"><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:14px;color:#22c55e;">'+elites+'</div><div style="font-size:11.5px;color:#40405a;">Elite</div></div>'+
+        '<div style="text-align:center;"><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:14px;color:#eeeef4;">'+athletes.filter(function(a){return a.active;}).length+'</div><div style="font-size:11.5px;color:#40405a;">Active</div></div>'+
+        '<div style="text-align:center;"><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:14px;color:#ff9933;">'+stars+'</div><div style="font-size:11.5px;color:#40405a;">Rising ⭐</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card" style="padding:24px;">'+
+      '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;margin-bottom:18px;">Avg Score by Sport</div>'+
+      '<div style="position:relative;height:188px;"><canvas id="sportBarChart"></canvas></div>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="analytics-bottom">'+
+    '<div class="card" style="padding:24px;">'+
+      '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;margin-bottom:18px;">Monthly Progress — Top 5</div>'+
+      '<div style="position:relative;height:245px;"><canvas id="progressChart"></canvas></div>'+
+    '</div>'+
+    '<div class="card" style="padding:24px;">'+
+      '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;font-size:15px;color:#eeeef4;margin-bottom:16px;">State Leaders</div>'+
+      '<div style="display:flex;flex-direction:column;gap:13px;">'+
+        s.slice(0,7).map(function(a){
+          var c=(SC[a.sport]||{c:'#ff9933'}).c;
+          return '<div>'+
+            '<div style="display:flex;justify-content:space-between;margin-bottom:5px;">'+
+              '<span style="font-size:12.5px;color:#7878a0;">'+a.name.split(' ')[0]+' · '+a.state+'</span>'+
+              '<span style="font-size:12.5px;font-weight:700;color:#eeeef4;">'+a.score+'</span>'+
+            '</div>'+
+            '<div class="progress-track"><div class="progress-fill" style="width:'+a.score+'%;background:'+c+'40;position:relative;">'+
+              '<div style="position:absolute;inset:0;background:'+c+';border-radius:3px;"></div>'+
+            '</div></div>'+
+          '</div>';
+        }).join('')+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function initAnalytics(){
+  var gc=document.getElementById('gaugeCanvas');
+  if(gc){var avg=Math.round(athletes.reduce(function(s,a){return s+a.score;},0)/athletes.length);gauge(gc,avg,100);}
+
+  var sportAvg={};
+  Object.keys(sportCount()).forEach(function(s){
+    var arr=athletes.filter(function(a){return a.sport===s;});
+    sportAvg[s]=Math.round(arr.reduce(function(sum,a){return sum+a.score;},0)/arr.length);
+  });
+  var sbEl=document.getElementById('sportBarChart');
+  if(sbEl){
+    chartInst.sbar=new Chart(sbEl,{
+      type:'bar',
+      data:{labels:Object.keys(sportAvg),datasets:[{data:Object.values(sportAvg),backgroundColor:Object.keys(sportAvg).map(function(s){return SC[s].c+'2a';}),borderColor:Object.keys(sportAvg).map(function(s){return SC[s].c;}),borderWidth:2,borderRadius:8,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:800},plugins:{legend:{display:false},tooltip:CHART_TOOLTIP},scales:{x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:11}},border:{display:false}},y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:11}},border:{display:false},min:60,max:100}}}
+    });
+  }
+  var pEl=document.getElementById('progressChart');
+  if(pEl){
+    var top5=sorted().slice(0,5);
+    chartInst.prog=new Chart(pEl,{
+      type:'line',
+      data:{labels:MONTHS,datasets:top5.map(function(a){var c=(SC[a.sport]||{c:'#ff9933'}).c;return{label:a.name.split(' ')[0],data:a.history,borderColor:c,backgroundColor:'transparent',tension:.42,borderWidth:2,pointRadius:3,pointBackgroundColor:c,pointBorderColor:'#10101a',pointBorderWidth:1.5};})},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:1000},plugins:{legend:{display:true,labels:{color:'#50506a',font:{size:11},boxWidth:20,boxHeight:2,usePointStyle:true,pointStyle:'line'}},tooltip:CHART_TOOLTIP},scales:{x:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:11}},border:{display:false}},y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:11}},border:{display:false},min:50,max:100}}}
+    });
+  }
+}
+
+// ── VIEW: ADD ATHLETE ───────────────────────────────────────────────────────
+function vAdd(){
+  return pageHeader('Add Athlete','Register a new athlete in the ProTrack system','')+
+  '<div style="max-width:660px;margin:0 auto;">'+
+    '<div class="card" style="padding:32px;">'+
+      '<form id="addForm" onsubmit="submitAthlete(event)" novalidate>'+
+        '<div class="form-row" style="margin-bottom:20px;">'+
+          fField('Full Name','fname','text','Arjun Sharma','Name is required','fn')+
+          fField('Age','fage','number','22','Age must be 14–45','fa')+
+        '</div>'+
+        '<div class="form-row" style="margin-bottom:20px;">'+
+          '<div>'+
+            '<label style="display:block;font-size:13.5px;font-weight:500;color:#d8d8f0;margin-bottom:8px;">Sport <span style="color:#ef4444;">*</span></label>'+
+            '<select id="fsport" class="input-field" oninput="clearFErr(\'fs\')">'+
+              '<option value="">Select sport…</option>'+
+              Object.keys(SC).map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('')+
+            '</select>'+
+            '<p class="field-error" id="err-fs">Please select a sport</p>'+
+          '</div>'+
+          fField('State / UT','fstate','text','Maharashtra','State is required','fst')+
+        '</div>'+
+        '<div style="margin-bottom:20px;">'+
+          '<label style="display:block;font-size:13.5px;font-weight:500;color:#d8d8f0;margin-bottom:8px;">Initial Score <span style="color:#ff9933;font-size:12px;">drag to set</span></label>'+
+          '<div style="display:flex;align-items:center;gap:14px;">'+
+            '<input type="range" id="fscore" min="0" max="100" value="70" style="flex:1;" oninput="document.getElementById(\'scoreDisp\').textContent=this.value">'+
+            '<div id="scoreDisp" style="width:50px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:18px;color:#eeeef4;background:rgba(255,153,51,.12);border:1px solid rgba(255,153,51,.24);flex-shrink:0;">70</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="margin-bottom:28px;">'+
+          fField('Medals Won','fmedals','number','0','','fm')+
+        '</div>'+
+        '<div style="display:flex;justify-content:flex-end;gap:12px;">'+
+          '<button type="button" onclick="nav(\'athletes\')" class="btn-ghost">Cancel</button>'+
+          '<button type="submit" class="btn-primary"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Register Athlete</button>'+
+        '</div>'+
+      '</form>'+
+    '</div>'+
+  '</div>';
+}
+
+function fField(label,id,type,ph,errMsg,key){
+  return '<div>'+
+    '<label style="display:block;font-size:13.5px;font-weight:500;color:#d8d8f0;margin-bottom:8px;">'+label+(errMsg?' <span style="color:#ef4444;">*</span>':'')+'</label>'+
+    '<input type="'+type+'" id="'+id+'" class="input-field" placeholder="'+ph+'"'+(key?' oninput="clearFErr(\''+key+'\')"':'')+'>'+
+    (errMsg?'<p class="field-error" id="err-'+key+'">'+errMsg+'</p>':'')+
+  '</div>';
+}
+
+function clearFErr(key){
+  var f=document.getElementById({'fn':'fname','fa':'fage','fs':'fsport','fst':'fstate'}[key]||key);
+  var e=document.getElementById('err-'+key);
+  if(f) f.classList.remove('input-error');
+  if(e) e.classList.remove('show');
+}
+
+function submitAthlete(e){
+  e.preventDefault();
+  var name=(document.getElementById('fname')||{}).value||'';
+  var ageV=(document.getElementById('fage')||{}).value||'';
+  var sport=(document.getElementById('fsport')||{}).value||'';
+  var state=(document.getElementById('fstate')||{}).value||'';
+  var score=parseInt((document.getElementById('fscore')||{}).value||70);
+  var medals=parseInt((document.getElementById('fmedals')||{}).value||0)||0;
+  var age=parseInt(ageV);
+  var ok=true;
+  if(!name.trim()){markFErr('fname','fn');ok=false;}
+  if(!ageV||age<14||age>45||isNaN(age)){markFErr('fage','fa');ok=false;}
+  if(!sport){markFErr('fsport','fs');ok=false;}
+  if(!state.trim()){markFErr('fstate','fst');ok=false;}
+  if(!ok){toast('Please fix the errors above','error');return;}
+  var base=Math.max(10,score-18);
+  athletes.push({
+    id:athletes.length+1,name:name.trim(),sport,age,state:state.trim(),score,medals,
+    trend:0,active:true,
+    history:Array.from({length:8},function(_,i){return Math.round(base+(score-base)*(i/7));})
+  });
+  toast(name.trim()+' registered successfully!','success');
+  setTimeout(function(){nav('athletes');},600);
+}
+
+function markFErr(fid,key){
+  var f=document.getElementById(fid),e=document.getElementById('err-'+key);
+  if(f) f.classList.add('input-error');
+  if(e) e.classList.add('show');
+}
+
+// ── SHARED: PAGE HEADER ─────────────────────────────────────────────────────
+function pageHeader(title,sub,right){
+  return '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px;">'+
+    '<div>'+
+      '<h1 style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:28px;color:#eeeef4;margin:0 0 4px;">'+title+'</h1>'+
+      '<p style="color:#50506a;font-size:13.5px;margin:0;">'+sub+'</p>'+
+    '</div>'+
+    (right?'<div>'+right+'</div>':'')+
+  '</div>';
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    var sk=document.getElementById('loadingSkeleton');
+    if(sk) sk.remove();
+    nav('dashboard');
+  },80);
+});
+let isLoggedIn = false;
+
+function openLogin(){
+  document.getElementById("loginModal").style.display = "flex";
+}
+
+function closeLogin(){
+  document.getElementById("loginModal").style.display = "none";
+}
+
+function login(){
+  let user = document.getElementById("loginUser").value;
+  let pass = document.getElementById("loginPass").value;
+
+  if(!user || !pass){
+    alert("Enter details");
+    return;
+  }
+
+  isLoggedIn = true;
+  closeLogin();
+
+  updateLoginButton();
+  toast("Logged in successfully", "success");
+}
+
+function logout(){
+  isLoggedIn = false;
+
+  updateLoginButton();
+  toast("Logged out", "success");
+}
+
+function updateLoginButton(){
+  let btn = document.getElementById("loginBtn");
+
+  if(isLoggedIn){
+    btn.innerText = "Logout";
+    btn.onclick = logout;
+  } else {
+    btn.innerText = "Login";
+    btn.onclick = openLogin;
+  }
+}
+</script>
+<div id="loginModal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:999;">
+  
+  <div style="background:#111827;padding:24px;border-radius:12px;width:300px;box-shadow:0 10px 30px rgba(0,0,0,.5);">
+    
+    <h3 style="margin-bottom:15px;">Login</h3>
+
+    <input id="loginUser" placeholder="Username" style="width:100%;padding:8px;margin-bottom:10px;border-radius:6px;background:#1f2937;color:white;border:none;">
+    
+    <input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:8px;margin-bottom:15px;border-radius:6px;background:#1f2937;color:white;border:none;">
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="login()" class="btn-primary" style="flex:1;">Login</button>
+      <button onclick="closeLogin()" style="flex:1;">Cancel</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
